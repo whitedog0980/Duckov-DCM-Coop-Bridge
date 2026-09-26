@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<AssemblyName>DCMCoopBridge</AssemblyName>
+		<RootNamespace>DCMCoopBridge</RootNamespace>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+	</PropertyGroup>
+
+	<!--
+		게임 설치 경로. 본인 환경에 맞게 수정하거나, 빌드할 때
+		dotnet build -c Release -p:DuckovPath="D:\SteamLibrary\steamapps\common\Escape from Duckov"
+		처럼 넘겨주세요.
+	-->
+	<PropertyGroup>
+		<DuckovPath Condition="'$(DuckovPath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Escape from Duckov</DuckovPath>
+		<DuckovManaged>$(DuckovPath)\Duckov_Data\Managed</DuckovManaged>
+	</PropertyGroup>
+
+	<!-- 게임 DLL: 참조만 하고 결과물에는 복사하지 않음 -->
+	<ItemGroup>
+		<Reference Include="$(DuckovManaged)\TeamSoda.*.dll">
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="$(DuckovManaged)\Unity*.dll">
+			<Private>False</Private>
+		</Reference>
+		<!-- HarmonyLib 창작마당 모드가 런타임에 제공하므로 복사하지 않음 -->
+		<Reference Include="0Harmony">
+			<HintPath>lib\0Harmony.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<!-- DCM, Coop 모드 DLL은 참조하지 않습니다(런타임 리플렉션으로 연결). -->
+
+	<ItemGroup>
+		<None Update="info.ini">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="preview.png" Condition="Exists('preview.png')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Remove="lib\**" />
+	</ItemGroup>
+
+	<!-- 빌드 후 배포용 폴더(dist\DCMCoopBridge)에 dll + info.ini 모으기 -->
+	<Target Name="PackageMod" AfterTargets="Build">
+		<PropertyGroup>
+			<_DistDir>$(MSBuildProjectDirectory)\..\dist\DCMCoopBridge</_DistDir>
+		</PropertyGroup>
+		<MakeDir Directories="$(_DistDir)" />
+		<Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(_DistDir)" />
+		<Copy SourceFiles="info.ini" DestinationFolder="$(_DistDir)" />
+		<Copy SourceFiles="preview.png" DestinationFolder="$(_DistDir)" Condition="Exists('preview.png')" />
+		<Message Text="DCMCoopBridge -&gt; $(_DistDir)" Importance="High" />
+	</Target>
+
+</Project>
